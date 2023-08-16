@@ -1,0 +1,15 @@
+with yearly_sales as (
+select a.* , 
+case when period_start > start_date then period_start else start_date end as start_date ,
+case when period_end < end_date then period_end else end_date end as end_date from mkt_stage.sales a
+inner join 
+
+(select '2018-01-01' start_date ,'2018-12-31' end_date  , '2018' as  year
+union all
+select '2019-01-01' start_date ,'2019-12-31' end_date  , '2019' as year
+union all
+select '2020-01-01' start_date ,'2020-12-31' end_date  , '2020' as year
+) b on  year between year(period_start) and year(period_end)
+)
+select product_id, year(start_date), sum((DATEDIFF(end_date,start_date)+1)* average_daily_sales) from yearly_sales
+group by product_id, year(start_date)
