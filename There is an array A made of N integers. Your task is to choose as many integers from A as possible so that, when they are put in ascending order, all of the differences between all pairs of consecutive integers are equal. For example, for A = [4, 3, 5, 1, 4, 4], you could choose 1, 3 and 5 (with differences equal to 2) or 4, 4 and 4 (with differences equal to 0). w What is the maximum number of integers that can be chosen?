@@ -1,0 +1,24 @@
+#A=[4,3,1,5,4,4] 
+#A=[4,7,1,5,3] 
+#A=[12,12,12,15,10] 
+A=[18,26,18,24,24,20,22] 
+A.sort()
+dic={}
+max = 1
+print(A)
+for i in range(len(A)-1):
+    l=[A[i]]
+    diff = A[i+1]-A[i]
+    t=A[i]
+    for j in range(i+1,len(A)):
+        if diff == A[j]-t:
+            l.append(A[j])
+            t=A[j]
+    dic[len(l)]=l 
+    if max <=len(l):
+        max =len(l)
+print(max)   
+
+        
+        
+    
