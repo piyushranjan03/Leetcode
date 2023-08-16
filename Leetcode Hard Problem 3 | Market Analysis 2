@@ -1,0 +1,8 @@
+with abc as (
+select seller_id , o.item_id ,order_date, dense_rank() over(partition by seller_id order by order_date) as rnk , 
+count(*) over(partition by seller_id) cnt,
+item_brand,favorite_brand,case when item_brand = favorite_brand then 'yes' else 'no' end as op 
+from orders o inner join users u on u.user_id = o.seller_id
+left join items i on i.item_id =o.item_id ) 
+
+select coalesce(seller_id,user_id) as seller_id,coalesce(op,'no') as op from users u left join abc a on u.user_id = a.seller_id and (rnk =2 or cnt=1)
