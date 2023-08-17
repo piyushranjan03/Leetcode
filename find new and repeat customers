@@ -1,0 +1,8 @@
+with min_order as (
+select customer_id , min(order_date)  as min_order from customer_orders group by customer_id ) ,
+abc as (
+select c.*,min_order from customer_orders c inner join min_order  m on m.customer_id = c.customer_id
+)
+select order_date , sum(case when order_date = min_order then 1 else 0 end) as new_customer, sum(case when order_date != min_order then 1 else 0 end) as old_customer 
+from abc
+group by order_date order by order_date asc 
