@@ -1,0 +1,6 @@
+with abc as (
+select o.*,p.name from orders o inner join products p on p.id =o.product_id )
+
+select CONCAT(a.name ,b.name) as pair , count(*) pair_freq from abc a inner join abc b on a.order_id = b.order_id and a.product_id <>b. product_id
+where b.name>a.name
+group by CONCAT(a.name ,b.name)
