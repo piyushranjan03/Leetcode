@@ -1,0 +1,50 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import row_number,count
+from pyspark.sql.window import Window ,WindowSpec
+
+# Initialize a Spark session
+spark = SparkSession.builder.appName("EmployeeData").getOrCreate()
+
+# Define the data
+data = [
+    (1, 'A', 2341),
+    (2, 'A', 341),
+    (3, 'A', 15),
+    (4, 'A', 15314),
+    (5, 'A', 451),
+    (6, 'A', 513),
+    (7, 'B', 15),
+    (8, 'B', 13),
+    (9, 'B', 1154),
+    (10, 'B', 1345),
+    (11, 'B', 1221),
+    (12, 'B', 234),
+    (13, 'C', 2345),
+    (14, 'C', 2645),
+    (15, 'C', 2645),
+    (16, 'C', 2652),
+    (17, 'C', 65)
+]
+
+# Define the schema
+schema = ["emp_id", "company", "salary"]
+
+# Create a DataFrame
+employee_df = spark.createDataFrame(data, schema=schema)
+
+# Show the DataFrame
+employee_df.show()
+
+
+employee_df =employee_df.withColumn('row_num',row_number().over(Window.partitionBy('company').orderBy('salary')))
+employee_df=employee_df.withColumn('cnt',count('*').over(Window.partitionBy('company')))
+#employee_df=employee_df.withColumn('cnt',employee_df['cnt']*1.0)
+employee_df=employee_df.withColumn('first_num',employee_df['cnt']/2)
+employee_df=employee_df.withColumn('second_num',employee_df['cnt']/2+1)
+employee_df.show()
+employee_df=employee_df.filter((employee_df['row_num']>=employee_df['first_num']) & (employee_df['row_num']<=employee_df['second_num']))
+employee_df.select("emp_id", "company", "salary").show()
+
+
+# Stop the Spark session when done
+#spark.stop()
