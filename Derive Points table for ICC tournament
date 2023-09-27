@@ -1,0 +1,40 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType
+from pyspark.sql.functions import col,when,count,sum
+
+# Initialize a Spark session
+spark = SparkSession.builder.appName("ICCWorldCupData").getOrCreate()
+
+# Define the schema for the DataFrame
+schema = StructType([
+    StructField("Team_1", StringType(), False),
+    StructField("Team_2", StringType(), False),
+    StructField("Winner", StringType(), False)
+])
+
+# Define the data as a list of rows
+data = [
+    ('India', 'SL', 'India'),
+    ('SL', 'Aus', 'Aus'),
+    ('SA', 'Eng', 'Eng'),
+    ('Eng', 'NZ', 'NZ'),
+    ('Aus', 'India', 'India')
+]
+
+# Create a DataFrame from the data and schema
+icc_world_cup_df = spark.createDataFrame(data, schema=schema)
+
+# Show the DataFrame
+icc_world_cup_df.show()
+
+Team = icc_world_cup_df.select('Team_1').union(icc_world_cup_df.select('Team_2'))
+Team = Team.withColumnRenamed('Team_1','Team').select('Team').distinct()
+Team.show()
+# Stop the Spark session when done
+final_df = Team.join(icc_world_cup_df, Team.Team==icc_world_cup_df.Winner,'left')
+final_df = final_df.withColumn("no_of_wins",when(final_df.Winner.isNull(),value=0).otherwise(1)).withColumn("no_of_losses",when(final_df.Winner.isNull(),value=1).otherwise(0))
+final_df = final_df.groupBy('Team').agg(count('*'),sum('no_of_wins'),sum('no_of_losses')).select('Team',col('sum(no_of_wins)').alias('no_of_wins'),col('sum(no_of_losses)').alias('no_of_wins'))
+
+
+final_df.show()
+#spark.stop()
