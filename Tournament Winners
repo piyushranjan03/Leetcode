@@ -1,0 +1,50 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col,sum,rank
+from pyspark.sql.window import *
+
+# Initialize a Spark session
+spark = SparkSession.builder.appName("CreateDataFrames").getOrCreate()
+
+# Create DataFrames for players and matches tables
+players_data = [
+    (15, 1),
+    (25, 1),
+    (30, 1),
+    (45, 1),
+    (10, 2),
+    (35, 2),
+    (50, 2),
+    (20, 3),
+    (40, 3)
+]
+
+players_columns = ["player_id", "group_id"]
+
+matches_data = [
+    (1, 15, 45, 3, 0),
+    (2, 30, 25, 1, 2),
+    (3, 30, 15, 2, 0),
+    (4, 40, 20, 5, 2),
+    (5, 35, 50, 1, 1)
+]
+
+matches_columns = ["match_id", "first_player", "second_player", "first_score", "second_score"]
+
+players_df = spark.createDataFrame(players_data, players_columns)
+matches_df = spark.createDataFrame(matches_data, matches_columns)
+
+players = matches_df['first_player','first_score'].union(matches_df['second_player','second_score']).select(col('first_player').alias('player_id'),col('first_score').alias('score'))
+players =players.groupBy('player_id').agg(sum('score').alias('total'))
+#players.show()
+
+final_df = players_df.join(players,'player_id','inner')
+
+final_df = final_df.withColumn('rank',rank().over(Window.partitionBy('group_id').orderBy(col('total').desc(),col('player_id').asc()))).filter(col('rank')==1).select('player_id','group_id','total')
+final_df.show()
+
+# Show the DataFrames
+players_df.show()
+matches_df.show()
+
+# Stop the Spark session when done
+#spark.stop()
