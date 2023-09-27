@@ -1,0 +1,39 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import count,collect_set,sort_array,max
+from pyspark.sql.functions import col,concat_ws
+# Initialize a Spark session
+spark = SparkSession.builder.appName("EntriesData").getOrCreate()
+
+# Sample data
+data = [
+    ('A', 'Bangalore', 'A@gmail.com', 1, 'CPU'),
+    ('A', 'Bangalore', 'A1@gmail.com', 1, 'CPU'),
+    ('A', 'Bangalore', 'A2@gmail.com', 2, 'DESKTOP'),
+    ('B', 'Bangalore', 'B@gmail.com', 2, 'DESKTOP'),
+    ('B', 'Bangalore', 'B1@gmail.com', 2, 'DESKTOP'),
+    ('B', 'Bangalore', 'B2@gmail.com', 1, 'MONITOR')
+]
+
+# Define the schema for the DataFrame
+columns = ["name", "address", "email", "floor", "resources"]
+
+# Create a DataFrame from the data and schema
+entries_df = spark.createDataFrame(data, columns)
+
+new_df = entries_df.groupBy('name').agg(count('*').alias('total_visit'),sort_array(collect_set("resources")).alias("resources"))
+
+# Show the DataFrame
+new_df.show()
+entries_df.show()
+
+temp_df = entries_df.groupBy('name','floor').agg(count('*').alias('cnt'))
+temp_df2 =temp_df.groupBy('name').agg(max('cnt').alias('cnt'))
+temp_final =temp_df.join(temp_df2,['name','cnt'],'inner')
+#temp_final = temp_final.alias("temp_final")
+temp_final.show()
+
+final_df=temp_final.join(new_df,'name','inner')
+final_df.select('name','total_visit',col('floor').alias('most_visited_floor'),concat_ws(',','resources').alias('resources_used')).show()
+
+# Stop the Spark session when done
+#spark.stop()
