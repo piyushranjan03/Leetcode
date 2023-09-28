@@ -1,0 +1,35 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType
+from pyspark.sql.functions import lead,lag,when,sum,max,min
+from pyspark.sql.window import Window
+
+# Initialize a Spark session
+spark = SparkSession.builder.appName("CreateTasksDataFrame").getOrCreate()
+
+# Define the schema for the DataFrame
+schema = StructType([
+    StructField("date_value", StringType(), True),
+    StructField("state", StringType(), True)
+])
+
+# Define the data as a list of rows
+data = [
+    ('2019-01-01', 'success'),
+    ('2019-01-02', 'success'),
+    ('2019-01-03', 'success'),
+    ('2019-01-05', 'fail'),
+    ('2019-01-06', 'fail'),
+    ('2019-01-07', 'success'),
+    ('2019-01-04', 'success')
+]
+
+# Create a DataFrame from the data and schema
+tasks_df = spark.createDataFrame(data, schema=schema)
+
+tasks_df = tasks_df.withColumn('lead',lag('state',1).over(Window.orderBy('date_value')))
+# Show the DataFrame
+tasks_df = tasks_df.withColumn('flag',when(tasks_df.state==tasks_df.lead,value =0).otherwise(1)).withColumn('run_sum',sum('flag').over(Window.orderBy('date_value'))).groupBy('state','run_sum').agg(min('date_value').alias('start_date'),max('date_value').alias('end_date'),max('state').alias('state_g')).select('start_date','end_date','state_g').orderBy('start_date')
+tasks_df.show()
+
+# Stop the Spark session when done
+#spark.stop()
